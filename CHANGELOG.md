@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-06
+
+### Changed
+
+- Faster loading: settings, accounts and activities load alongside the saved preferences, exchange rates and Wealthfolio's TWR are fetched in parallel with price history, and exchange-rate batches are sent together
+- Switching period no longer reloads activities and price history; only exchange rates and the TWR are fetched for the new period
+
 ## [1.0.0] - 2026-10-05
 
 First release.

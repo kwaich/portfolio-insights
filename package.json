@@ -1,6 +1,6 @@
 {
   "name": "wealthfolio-portfolio-insights-addon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Splits each holding's gain into price, currency and income effects, and shows its contribution to portfolio return",
   "type": "module",
   "main": "dist/addon.js",

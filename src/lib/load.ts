@@ -1,4 +1,4 @@
-import type { HostAPI, UnlistenFn } from '@wealthfolio/addon-sdk';
+import type { HostAPI, Quote, UnlistenFn } from '@wealthfolio/addon-sdk';
 import { format } from 'date-fns';
 import { addDays, daysBetween } from './attribution/series';
 import type { AttributionInput, EngineActivity, PricePoint } from './attribution/types';
@@ -21,18 +21,27 @@ interface LoadedInput {
   warnings: string[];
   /** Display label per asset id. */
   names: Record<string, string>;
+  /** Wealthfolio's TWR over the same accounts and dates. */
+  twr: number | null;
+}
+
+export type BaseData = Awaited<ReturnType<typeof loadBase>>;
+
+/** Everything that doesn't depend on the chosen period or account. */
+export async function loadBase(api: HostAPI) {
+  const [settings, accounts, activities] = await Promise.all([api.settings.get(), api.accounts.getAll(), api.activities.getAll()]);
+  return { settings, accounts, activities };
 }
 
 /** `start: null` means since inception (the day before the first activity). */
 export async function loadAttributionInput(
   api: HostAPI,
+  base: BaseData,
   opts: { accountId?: string; start: string | null; end: string },
+  getHistory: (assetId: string) => Promise<Quote[]>,
 ): Promise<LoadedInput> {
-  const [settings, accounts, rawActivities] = await Promise.all([
-    api.settings.get(),
-    api.accounts.getAll(),
-    api.activities.getAll(opts.accountId),
-  ]);
+  const { settings, accounts } = base;
+  const rawActivities = opts.accountId ? base.activities.filter((a) => a.accountId === opts.accountId) : base.activities;
   const baseCurrency = settings.baseCurrency;
   const excluded = accounts.filter((a) => a.trackingMode === 'HOLDINGS' && (!opts.accountId || a.id === opts.accountId));
   const excludedIds = new Set(excluded.map((a) => a.id));
@@ -66,8 +75,26 @@ export async function loadAttributionInput(
   const firstDay = activities.reduce((m, a) => (a.date < m ? a.date : m), opts.end);
   const start = opts.start ?? addDays(firstDay, -1);
 
+  // Started now so it overlaps the quote and FX requests; loadTwr never rejects.
+  const twr = loadTwr(api, accountIds, start, opts.end);
+
+  const days = daysBetween(start, opts.end);
+  const warnings = new Set<string>();
+  const fxToBase: Record<string, PricePoint[]> = {};
+  const fetchRates = async (currencies: Set<string>) => {
+    currencies.delete(baseCurrency);
+    const pairs = [...currencies].flatMap((c) => days.map((date) => ({ fromCurrency: c, toCurrency: baseCurrency, date })));
+    const chunks = [];
+    for (let i = 0; i < pairs.length; i += FX_CHUNK) chunks.push(api.exchangeRates.getRatesForDates(pairs.slice(i, i + FX_CHUNK)));
+    for (const r of (await Promise.all(chunks)).flat()) {
+      if (r.rate == null) warnings.add(`FX ${r.fromCurrency}/${r.toCurrency}: ${r.error ?? 'no rate'}`);
+      else (fxToBase[r.fromCurrency] ??= []).push({ date: r.date, value: r.rate });
+    }
+  };
+
   const assetIds = [...new Set(activities.flatMap((a) => (a.assetId ? [a.assetId] : [])))];
-  const histories = await Promise.all(assetIds.map((id) => api.quotes.getHistory(id)));
+  const activityCurrencies = new Set(activities.map((a) => a.currency));
+  const [histories] = await Promise.all([Promise.all(assetIds.map(getHistory)), fetchRates(new Set(activityCurrencies))]);
   const quotes: AttributionInput['quotes'] = {};
   assetIds.forEach((id, i) => {
     const qs = histories[i];
@@ -77,19 +104,14 @@ export async function loadAttributionInput(
       points: qs.map((q) => ({ date: q.timestamp.slice(0, 10), value: q.close })).filter((p) => p.date <= opts.end),
     };
   });
-
-  const currencies = new Set([...activities.map((a) => a.currency), ...Object.values(quotes).map((q) => q.currency)]);
-  currencies.delete(baseCurrency);
-  const days = daysBetween(start, opts.end);
-  const pairs = [...currencies].flatMap((c) => days.map((date) => ({ fromCurrency: c, toCurrency: baseCurrency, date })));
-  const fxToBase: Record<string, PricePoint[]> = {};
-  const warnings = new Set<string>();
-  for (let i = 0; i < pairs.length; i += FX_CHUNK) {
-    for (const r of await api.exchangeRates.getRatesForDates(pairs.slice(i, i + FX_CHUNK))) {
-      if (r.rate == null) warnings.add(`FX ${r.fromCurrency}/${r.toCurrency}: ${r.error ?? 'no rate'}`);
-      else (fxToBase[r.fromCurrency] ??= []).push({ date: r.date, value: r.rate });
-    }
-  }
+  // Quote currencies nobody traded in (rare) are only known now.
+  await fetchRates(
+    new Set(
+      Object.values(quotes)
+        .map((q) => q.currency)
+        .filter((c) => !activityCurrencies.has(c)),
+    ),
+  );
 
   return {
     input: { baseCurrency, start, end: opts.end, activities, quotes, fxToBase },
@@ -97,6 +119,7 @@ export async function loadAttributionInput(
     accountIds,
     warnings: [...warnings],
     names,
+    twr: await twr,
   };
 }
 

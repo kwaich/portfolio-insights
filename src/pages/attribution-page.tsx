@@ -48,7 +48,7 @@ import { AlertTriangle, ArrowDown, ArrowUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { attribute } from '../lib/attribution/attribute';
 import type { Components, LineResult } from '../lib/attribution/types';
-import { loadAttributionInput, loadTwr, resyncPrices } from '../lib/load';
+import { loadAttributionInput, loadBase, resyncPrices } from '../lib/load';
 import { periodRange, type Period } from '../lib/period';
 
 const PREFS_KEY = 'ui.prefs';
@@ -128,26 +128,35 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'contributionPp', desc: true });
   const today = useMemo(() => new Date(), []);
 
-  const accounts = useQuery({ queryKey: ['portfolio-insights', 'accounts'], queryFn: () => ctx.api.accounts.getAll() });
+  // Doesn't depend on the saved period or account, so it loads alongside them and survives period changes.
+  const base = useQuery({ queryKey: ['portfolio-insights', 'base'], staleTime: 5 * 60_000, queryFn: () => loadBase(ctx.api) });
 
   const accountId = prefs && prefs.accountId !== ALL ? prefs.accountId : undefined;
   const custom = { from: prefs?.from ? parseISO(prefs.from) : undefined, to: prefs?.to ? parseISO(prefs.to) : undefined };
   const range = prefs ? periodRange(prefs.period, today, custom) : undefined;
 
   const reportKey = ['portfolio-insights', 'attribution', accountId ?? ALL, range?.start ?? 'inception', range?.end];
+  const queryClient = useQueryClient();
+  // Quote history doesn't depend on the period, so keep it across period changes. It sits under
+  // the 'attribution' key so that a re-sync's invalidation marks it stale too.
+  const quoteHistory = (assetId: string) =>
+    queryClient.fetchQuery({
+      queryKey: ['portfolio-insights', 'attribution', 'quotes', assetId],
+      queryFn: () => ctx.api.quotes.getHistory(assetId),
+      staleTime: 5 * 60_000,
+    });
   const report = useQuery({
     queryKey: reportKey,
-    enabled: !!range,
+    enabled: !!range && !!base.data,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const loaded = await loadAttributionInput(ctx.api, { accountId, start: range!.start, end: range!.end });
-      const result = attribute(loaded.input);
-      const twr = await loadTwr(ctx.api, loaded.accountIds, loaded.input.start, loaded.input.end);
-      return { ...loaded, result, twr };
+      const loaded = await loadAttributionInput(ctx.api, base.data!, { accountId, start: range!.start, end: range!.end }, quoteHistory);
+      return { ...loaded, result: attribute(loaded.input) };
     },
   });
 
-  const queryClient = useQueryClient();
+  const loadError = base.error ?? report.error;
+
   const resync = useMutation({
     mutationFn: (assetId: string) => resyncPrices(ctx.api, assetId),
     onSuccess: async (_, assetId) => {
@@ -231,7 +240,7 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>All accounts</SelectItem>
-              {accounts.data?.map((a) => (
+              {base.data?.accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.name}
                 </SelectItem>
@@ -241,11 +250,11 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
         </div>
 
         {!range && prefs && <p className="text-muted-foreground text-sm">Pick a start and end date.</p>}
-        {report.isLoading && <Skeleton className="h-96 w-full" />}
-        {report.error && (
+        {(base.isLoading || report.isLoading) && <Skeleton className="h-96 w-full" />}
+        {loadError && (
           <Alert variant="destructive">
             <AlertTitle>Could not build the report</AlertTitle>
-            <AlertDescription>{String(report.error instanceof Error ? report.error.message : report.error)}</AlertDescription>
+            <AlertDescription>{String(loadError instanceof Error ? loadError.message : loadError)}</AlertDescription>
           </Alert>
         )}
 
