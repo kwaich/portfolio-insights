@@ -1,0 +1,103 @@
+{
+  "id": "portfolio-insights",
+  "name": "portfolio-insights",
+  "version": "1.0.0",
+  "description": "A Wealthfolio addon for portfolio-insights",
+  "author": "kwaich",
+  "main": "dist/addon.js",
+  "sdkVersion": "3.9.0",
+  "minWealthfolioVersion": "3.9.0",
+  "enabled": true,
+  "contributes": {
+    "routes": [
+      {
+        "id": "portfolio-insights"
+      }
+    ],
+    "links": {
+      "sidebar": [
+        {
+          "id": "portfolio-insights",
+          "route": "portfolio-insights",
+          "label": "portfolio-insights",
+          "icon": "squares-four",
+          "order": 100
+        }
+      ]
+    }
+  },
+  "hostDependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "@wealthfolio/addon-sdk": "^3.9.0",
+    "@wealthfolio/ui": "^3.9.0",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.561.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.7.0"
+  },
+  "permissions": [
+    {
+      "category": "accounts",
+      "functions": [
+        "getAll"
+      ],
+      "purpose": "List accounts for the account filter and skip holdings-only accounts"
+    },
+    {
+      "category": "settings",
+      "functions": [
+        "get"
+      ],
+      "purpose": "Read the base currency"
+    },
+    {
+      "category": "activities",
+      "functions": [
+        "getAll"
+      ],
+      "purpose": "Rebuild daily quantities, cash balances and income"
+    },
+    {
+      "category": "quotes",
+      "functions": [
+        "getHistory"
+      ],
+      "purpose": "Daily local-currency prices per holding"
+    },
+    {
+      "category": "currency",
+      "functions": [
+        "getRatesForDates"
+      ],
+      "purpose": "Daily exchange rates to the base currency"
+    },
+    {
+      "category": "performance",
+      "functions": [
+        "calculateSummary"
+      ],
+      "purpose": "Show Wealthfolio's time-weighted return alongside ours"
+    },
+    {
+      "category": "market-data",
+      "functions": [
+        "sync"
+      ],
+      "purpose": "Re-download a holding's missing price history when you click Re-sync prices"
+    },
+    {
+      "category": "events",
+      "functions": [
+        "onUpdateComplete",
+        "onUpdateError"
+      ],
+      "purpose": "Know when a price re-sync has finished so the report can reload"
+    }
+  ],
+  "keywords": [
+    "wealthfolio",
+    "addon"
+  ],
+  "license": "MIT"
+}
