@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First release.
 
 ### Added
+
 - Portfolio Insights page with per-holding FX attribution and contribution analysis
   - Period selector (1M, 3M, YTD, 1Y, since inception, custom) and account filter; the last choice is remembered in addon storage
   - Summary of currency effect, total gain, simple return on average capital, and Wealthfolio's TWR for comparison
@@ -30,5 +31,6 @@ First release.
 - Holdings-mode accounts (no trade history) are excluded with a note
 
 ### Compatibility
+
 - Requires Wealthfolio 3.9.0 or newer
 - Permissions: accounts, settings, activities, quotes, currency rates, performance, market-data sync and portfolio update events; no network access

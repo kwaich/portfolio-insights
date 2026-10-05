@@ -18,7 +18,9 @@
     "bundle": "pnpm clean && pnpm build && pnpm package",
     "lint": "tsc --noEmit",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",
@@ -42,6 +44,7 @@
     "@wealthfolio/ui": "^3.9.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.561.0",
+    "prettier": "^3.9.9",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.7.0",

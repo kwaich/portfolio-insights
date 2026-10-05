@@ -8,7 +8,10 @@ const D1 = '2026-01-06';
 const D2 = '2026-01-07';
 
 const act = (a: Partial<EngineActivity> & Pick<EngineActivity, 'date' | 'type'>): EngineActivity => ({ currency: 'SGD', ...a });
-const quotes = (currency: string, ...closes: [string, number][]) => ({ currency, points: closes.map(([date, value]) => ({ date, value })) });
+const quotes = (currency: string, ...closes: [string, number][]) => ({
+  currency,
+  points: closes.map(([date, value]) => ({ date, value })),
+});
 
 function run(input: Partial<AttributionInput> & Pick<AttributionInput, 'activities'>): AttributionResult {
   const r = attribute({ baseCurrency: 'SGD', start: D0, end: D1, quotes: {}, fxToBase: {}, ...input });
@@ -36,7 +39,12 @@ describe('worked examples', () => {
         act({ date: D0, type: 'BUY', assetId: 'AAPL', quantity: '10', unitPrice: '100', currency: 'USD' }),
       ],
       quotes: { AAPL: quotes('USD', [D0, 100], [D1, 110]) },
-      fxToBase: { USD: [{ date: D0, value: 1.35 }, { date: D1, value: 1.3 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.35 },
+          { date: D1, value: 1.3 },
+        ],
+      },
     });
     const a = line(r, 'asset:AAPL');
     expect(a.gain.toNumber()).toBe(80);
@@ -99,7 +107,13 @@ describe('edge cases', () => {
         act({ date: D1, type: 'DIVIDEND', assetId: 'X', amount: '5', currency: 'USD' }),
       ],
       quotes: { X: quotes('USD', [D0, 100]) },
-      fxToBase: { USD: [{ date: D0, value: 1.3 }, { date: D1, value: 1.4 }, { date: D2, value: 1.5 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.3 },
+          { date: D1, value: 1.4 },
+          { date: D2, value: 1.5 },
+        ],
+      },
     });
     const x = line(r, 'asset:X');
     expect(x.income.toNumber()).toBe(7); // 5 × 1.4
@@ -148,7 +162,12 @@ describe('edge cases', () => {
         act({ date: D0, type: 'BUY', assetId: 'US', quantity: '1', unitPrice: '10', currency: 'USD' }),
       ],
       quotes: { D05: quotes('SGD', [D0, 40], [D1, 41]), US: quotes('USD', [D0, 10], [D1, 10]) },
-      fxToBase: { USD: [{ date: D0, value: 1.35 }, { date: D1, value: 1.3 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.35 },
+          { date: D1, value: 1.3 },
+        ],
+      },
     });
     expect(line(r, 'asset:D05').fxEffect.isZero()).toBe(true);
     expect(line(r, 'asset:US').fxEffect.toNumber()).toBeCloseTo(-0.5, 10);
@@ -157,7 +176,12 @@ describe('edge cases', () => {
   it('foreign cash gets an FX-only line', () => {
     const r = run({
       activities: [act({ date: D0, type: 'DEPOSIT', amount: '1000', currency: 'USD' })],
-      fxToBase: { USD: [{ date: D0, value: 1.35 }, { date: D1, value: 1.3 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.35 },
+          { date: D1, value: 1.3 },
+        ],
+      },
     });
     const c = line(r, 'cash:USD');
     expect(c.fxEffect.toNumber()).toBe(-50);
@@ -173,7 +197,12 @@ describe('edge cases', () => {
         act({ date: D0, type: 'BUY', assetId: 'AAPL', quantity: '10', unitPrice: '100', currency: 'USD' }),
       ],
       quotes: { AAPL: quotes('USD', [D0, 100], [D1, 110]) },
-      fxToBase: { USD: [{ date: D0, value: 1.35 }, { date: D1, value: 1.3 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.35 },
+          { date: D1, value: 1.3 },
+        ],
+      },
     });
     const a = line(r, 'asset:AAPL');
     expect(a.startValue.toNumber()).toBe(0);
@@ -196,22 +225,42 @@ describe('splits (match Wealthfolio)', () => {
     });
 
   it('falls back to quantity for the ratio when amount is empty', () => {
-    const x = line(holdSplit({ quantity: '2' }, [[D0, 50], [D1, 50], [D2, 55]]), 'asset:X');
+    const x = line(
+      holdSplit({ quantity: '2' }, [
+        [D0, 50],
+        [D1, 50],
+        [D2, 55],
+      ]),
+      'asset:X',
+    );
     expect(x.endValue.toNumber()).toBe(1100);
     expect(x.priceEffect.toNumber()).toBe(100);
   });
 
   it('handles unadjusted quotes (price halves on the split date)', () => {
-    const x = line(holdSplit({ amount: '2' }, [[D0, 100], [D1, 50], [D2, 55]]), 'asset:X');
+    const x = line(
+      holdSplit({ amount: '2' }, [
+        [D0, 100],
+        [D1, 50],
+        [D2, 55],
+      ]),
+      'asset:X',
+    );
     expect(x.startValue.toNumber()).toBe(1000);
     expect(x.priceEffect.toNumber()).toBe(100); // no fake −50% drop on the split date
     expect(x.endValue.toNumber()).toBe(1100);
   });
 
   it('counts the same split recorded twice (e.g. in two accounts) once', () => {
-    const r = holdSplit({ amount: '2' }, [[D0, 50], [D1, 50], [D2, 55]], [
-      act({ date: D1, type: 'SPLIT', assetId: 'X', amount: '2' }),
-    ]);
+    const r = holdSplit(
+      { amount: '2' },
+      [
+        [D0, 50],
+        [D1, 50],
+        [D2, 55],
+      ],
+      [act({ date: D1, type: 'SPLIT', assetId: 'X', amount: '2' })],
+    );
     expect(line(r, 'asset:X').endValue.toNumber()).toBe(1100);
   });
 });
@@ -222,12 +271,24 @@ describe('cash booking (matches Wealthfolio)', () => {
       activities: [
         act({ date: D0, type: 'DEPOSIT', amount: '1350', accountCurrency: 'SGD' }),
         act({
-          date: D0, type: 'BUY', assetId: 'BLOK', quantity: '10', unitPrice: '100', amount: '1000',
-          currency: 'USD', accountCurrency: 'SGD', fxRate: '1.35',
+          date: D0,
+          type: 'BUY',
+          assetId: 'BLOK',
+          quantity: '10',
+          unitPrice: '100',
+          amount: '1000',
+          currency: 'USD',
+          accountCurrency: 'SGD',
+          fxRate: '1.35',
         }),
       ],
       quotes: { BLOK: quotes('USD', [D0, 100], [D1, 110]) },
-      fxToBase: { USD: [{ date: D0, value: 1.35 }, { date: D1, value: 1.3 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.35 },
+          { date: D1, value: 1.3 },
+        ],
+      },
     });
     expect(r.lines.map((l) => l.key)).toEqual(['asset:BLOK']); // SGD cash is 0, no USD cash line
     expect(line(r, 'asset:BLOK').fxEffect.toNumber()).toBe(-50);
@@ -239,12 +300,24 @@ describe('cash booking (matches Wealthfolio)', () => {
       activities: [
         act({ date: D0, type: 'DEPOSIT', amount: '1400', accountCurrency: 'SGD' }),
         act({
-          date: D1, type: 'BUY', assetId: 'BLOK', quantity: '10', unitPrice: '100', amount: '1000',
-          currency: 'USD', accountCurrency: 'SGD', fxRate: '1.36',
+          date: D1,
+          type: 'BUY',
+          assetId: 'BLOK',
+          quantity: '10',
+          unitPrice: '100',
+          amount: '1000',
+          currency: 'USD',
+          accountCurrency: 'SGD',
+          fxRate: '1.36',
         }),
       ],
       quotes: { BLOK: quotes('USD', [D0, 100], [D1, 100]) },
-      fxToBase: { USD: [{ date: D0, value: 1.35 }, { date: D1, value: 1.35 }] },
+      fxToBase: {
+        USD: [
+          { date: D0, value: 1.35 },
+          { date: D1, value: 1.35 },
+        ],
+      },
     });
     const b = line(r, 'asset:BLOK');
     expect(b.netFlows.toNumber()).toBe(1360); // what left SGD cash

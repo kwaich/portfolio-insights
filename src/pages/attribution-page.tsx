@@ -178,7 +178,9 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
         ...data.excludedAccounts.map((n) => `Account "${n}" uses holdings tracking (no trade history) and is excluded.`),
         ...data.warnings,
         ...data.result.warnings,
-        ...Object.entries(data.result.fxGaps).flatMap(([c, gs]) => gs.map((g) => `${c} FX: no rate from ${g.from} to ${g.to} (${g.days} days).`)),
+        ...Object.entries(data.result.fxGaps).flatMap(([c, gs]) =>
+          gs.map((g) => `${c} FX: no rate from ${g.from} to ${g.to} (${g.days} days).`),
+        ),
       ]
     : [];
   const gapLines = data ? data.result.lines.filter((l) => l.kind === 'asset' && l.gaps.length > 0) : [];
@@ -200,7 +202,10 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
             <DatePickerWithRange
               date={custom}
               onDateChange={(r) =>
-                updatePrefs({ from: r?.from ? format(r.from, 'yyyy-MM-dd') : undefined, to: r?.to ? format(r.to, 'yyyy-MM-dd') : undefined })
+                updatePrefs({
+                  from: r?.from ? format(r.from, 'yyyy-MM-dd') : undefined,
+                  to: r?.to ? format(r.to, 'yyyy-MM-dd') : undefined,
+                })
               }
             />
           )}
@@ -242,7 +247,9 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
                       </li>
                     ))}
                     {!data.result.total.reconciled && (
-                      <li>Portfolio total is off from (end − start − external flows) by {money.format(data.result.total.residual.toNumber())}</li>
+                      <li>
+                        Portfolio total is off from (end − start − external flows) by {money.format(data.result.total.residual.toNumber())}
+                      </li>
                     )}
                   </ul>
                 </AlertDescription>
@@ -261,16 +268,10 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
                       {gapLines.map((l) => (
                         <li key={l.key} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span>
-                            {nameOf(l)}:{' '}
-                            {l.gaps.map((g) => `no price from ${g.from} to ${g.to} (${g.days} days)`).join('; ')}. The last known price was used
-                            for those days.
+                            {nameOf(l)}: {l.gaps.map((g) => `no price from ${g.from} to ${g.to} (${g.days} days)`).join('; ')}. The last
+                            known price was used for those days.
                           </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={resync.isPending}
-                            onClick={() => resync.mutate(l.id)}
-                          >
+                          <Button size="sm" variant="outline" disabled={resync.isPending} onClick={() => resync.mutate(l.id)}>
                             {resync.isPending && resync.variables === l.id ? 'Re-syncing…' : 'Re-sync prices'}
                           </Button>
                         </li>
@@ -344,7 +345,9 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
                                   />
                                 )}
                               </span>
-                              {l.kind === 'asset' && l.currency !== ccy && <span className="text-muted-foreground ml-1 text-xs">{l.currency}</span>}
+                              {l.kind === 'asset' && l.currency !== ccy && (
+                                <span className="text-muted-foreground ml-1 text-xs">{l.currency}</span>
+                              )}
                             </TableCell>
                             <ValueCells c={l} money={money} signed={signed} />
                           </TableRow>
@@ -381,7 +384,9 @@ function ValueCells({ c, money, signed }: { c: Components; money: Intl.NumberFor
       {cell(c.priceEffect, signed, true)}
       {cell(c.fxEffect, signed, true)}
       {cell(c.gain, signed, true)}
-      <TableCell className={`text-right tabular-nums ${c.contributionPp ? signClass(c.contributionPp) : ''}`}>{fmtPp(c.contributionPp)}</TableCell>
+      <TableCell className={`text-right tabular-nums ${c.contributionPp ? signClass(c.contributionPp) : ''}`}>
+        {fmtPp(c.contributionPp)}
+      </TableCell>
     </>
   );
 }
@@ -413,11 +418,11 @@ function Summary({
             {start} → {end}
           </span>
           <span>
-            Total gain <span className={`text-foreground font-medium ${signClass(total.gain)}`}>{signed.format(total.gain.toNumber())}</span>
+            Total gain{' '}
+            <span className={`text-foreground font-medium ${signClass(total.gain)}`}>{signed.format(total.gain.toNumber())}</span>
           </span>
           <span>
-            Simple return on average capital{' '}
-            <span className="text-foreground font-medium">{fmtPct(total.contributionPp?.toNumber())}</span>
+            Simple return on average capital <span className="text-foreground font-medium">{fmtPct(total.contributionPp?.toNumber())}</span>
           </span>
           <span>
             Wealthfolio TWR <span className="text-foreground font-medium">{fmtPct(twr == null ? null : twr * 100)}</span>

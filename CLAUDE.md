@@ -15,6 +15,7 @@ pnpm dev                          # vite build --watch
 pnpm dev:server                   # wealthfolio-addon dev (hot-reload into a running Wealthfolio)
 pnpm type-check                   # tsc --noEmit (also what `pnpm lint` runs; there is no ESLint)
 pnpm test                         # vitest run (src/**/*.test.ts)
+pnpm format                       # prettier --write . (CI runs pnpm format:check)
 pnpm bundle                       # clean + build + zip dist/<name>-<version>.zip for distribution
 ```
 

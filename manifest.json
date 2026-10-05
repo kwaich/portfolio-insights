@@ -39,65 +39,45 @@
   "permissions": [
     {
       "category": "accounts",
-      "functions": [
-        "getAll"
-      ],
+      "functions": ["getAll"],
       "purpose": "List accounts for the account filter and skip holdings-only accounts"
     },
     {
       "category": "settings",
-      "functions": [
-        "get"
-      ],
+      "functions": ["get"],
       "purpose": "Read the base currency"
     },
     {
       "category": "activities",
-      "functions": [
-        "getAll"
-      ],
+      "functions": ["getAll"],
       "purpose": "Rebuild daily quantities, cash balances and income"
     },
     {
       "category": "quotes",
-      "functions": [
-        "getHistory"
-      ],
+      "functions": ["getHistory"],
       "purpose": "Daily local-currency prices per holding"
     },
     {
       "category": "currency",
-      "functions": [
-        "getRatesForDates"
-      ],
+      "functions": ["getRatesForDates"],
       "purpose": "Daily exchange rates to the base currency"
     },
     {
       "category": "performance",
-      "functions": [
-        "calculateSummary"
-      ],
+      "functions": ["calculateSummary"],
       "purpose": "Show Wealthfolio's time-weighted return alongside ours"
     },
     {
       "category": "market-data",
-      "functions": [
-        "sync"
-      ],
+      "functions": ["sync"],
       "purpose": "Re-download a holding's missing price history when you click Re-sync prices"
     },
     {
       "category": "events",
-      "functions": [
-        "onUpdateComplete",
-        "onUpdateError"
-      ],
+      "functions": ["onUpdateComplete", "onUpdateError"],
       "purpose": "Know when a price re-sync has finished so the report can reload"
     }
   ],
-  "keywords": [
-    "wealthfolio",
-    "addon"
-  ],
+  "keywords": ["wealthfolio", "addon"],
   "license": "MIT"
 }

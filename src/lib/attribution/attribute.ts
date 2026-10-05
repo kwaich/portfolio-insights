@@ -187,7 +187,11 @@ export function attribute(input: AttributionInput): AttributionResult {
     held[0] = !q.isZero();
     const startValue = q.times(P[0]).times(X[0]);
     capital[0] = capital[0].plus(startValue);
-    let priceEffect = ZERO, fxEffect = ZERO, netFlows = ZERO, income = ZERO, paidOut = ZERO;
+    let priceEffect = ZERO,
+      fxEffect = ZERO,
+      netFlows = ZERO,
+      income = ZERO,
+      paidOut = ZERO;
     for (let i = 1; i < n; i++) {
       priceEffect = priceEffect.plus(q.times(P[i].minus(P[i - 1])).times(X[i]));
       fxEffect = fxEffect.plus(q.times(P[i - 1]).times(X[i].minus(X[i - 1])));
@@ -217,9 +221,21 @@ export function attribute(input: AttributionInput): AttributionResult {
     const residual = gain.minus(endValue.minus(startValue).minus(netFlows).plus(paidOut));
     if ([startValue, endValue, netFlows, income, gain].every((d) => d.isZero())) continue;
     raw.push({
-      key, kind: l.kind, id: l.id, currency: l.currency, gaps,
-      startValue, endValue, netFlows, income, priceEffect, fxEffect, gain, paidOut,
-      residual, reconciled: residual.abs().lte(TOLERANCE),
+      key,
+      kind: l.kind,
+      id: l.id,
+      currency: l.currency,
+      gaps,
+      startValue,
+      endValue,
+      netFlows,
+      income,
+      priceEffect,
+      fxEffect,
+      gain,
+      paidOut,
+      residual,
+      reconciled: residual.abs().lte(TOLERANCE),
     });
   }
 
@@ -238,8 +254,13 @@ export function attribute(input: AttributionInput): AttributionResult {
   const totalOf = (k: keyof Pick<Components, 'startValue' | 'endValue' | 'netFlows' | 'income' | 'priceEffect' | 'fxEffect' | 'gain'>) =>
     sum(lineResults.map((l) => l[k]));
   const t = {
-    startValue: totalOf('startValue'), endValue: totalOf('endValue'), netFlows: totalOf('netFlows'),
-    income: totalOf('income'), priceEffect: totalOf('priceEffect'), fxEffect: totalOf('fxEffect'), gain: totalOf('gain'),
+    startValue: totalOf('startValue'),
+    endValue: totalOf('endValue'),
+    netFlows: totalOf('netFlows'),
+    income: totalOf('income'),
+    priceEffect: totalOf('priceEffect'),
+    fxEffect: totalOf('fxEffect'),
+    gain: totalOf('gain'),
   };
   // Independent total check: internal flows (trades, dividends into cash) must cancel out,
   // leaving only external flows.
@@ -250,7 +271,9 @@ export function attribute(input: AttributionInput): AttributionResult {
   for (const [ccy, { gaps }] of fxCache) if (gaps.length && keptCurrencies.has(ccy)) fxGaps[ccy] = gaps;
 
   return {
-    baseCurrency, start, end,
+    baseCurrency,
+    start,
+    end,
     lines: lineResults,
     total: { ...withPp(t), externalFlows, residual: totalResidual, reconciled: totalResidual.abs().lte(TOLERANCE) },
     averageCapital,
@@ -269,7 +292,10 @@ const relativeDistance = (v: Decimal, target: Decimal) => v.minus(target).abs().
 export function splitAdjusted(points: PricePoint[], splits: { date: string; ratio: Decimal }[]): PricePoint[] {
   const unadjusted = splits.filter(({ date, ratio }) => {
     if (ratio.eq(1)) return false;
-    const before = points.filter((p) => p.date < date).sort((x, y) => (x.date < y.date ? -1 : 1)).at(-1);
+    const before = points
+      .filter((p) => p.date < date)
+      .sort((x, y) => (x.date < y.date ? -1 : 1))
+      .at(-1);
     const after = points.filter((p) => p.date >= date).sort((x, y) => (x.date < y.date ? -1 : 1))[0];
     if (!before || !after || new Decimal(before.value).lte(0) || new Decimal(after.value).lte(0)) return false;
     const observed = new Decimal(before.value).div(after.value);

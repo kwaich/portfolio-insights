@@ -35,9 +35,7 @@ export async function loadAttributionInput(
   const baseCurrency = settings.baseCurrency;
   const excluded = accounts.filter((a) => a.trackingMode === 'HOLDINGS' && (!opts.accountId || a.id === opts.accountId));
   const excludedIds = new Set(excluded.map((a) => a.id));
-  const accountIds = accounts
-    .filter((a) => (!opts.accountId || a.id === opts.accountId) && !excludedIds.has(a.id))
-    .map((a) => a.id);
+  const accountIds = accounts.filter((a) => (!opts.accountId || a.id === opts.accountId) && !excludedIds.has(a.id)).map((a) => a.id);
 
   const activities: EngineActivity[] = rawActivities
     .filter((a) => !excludedIds.has(a.accountId) && (a.status == null || a.status === 'POSTED'))

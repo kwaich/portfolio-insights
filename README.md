@@ -10,10 +10,11 @@ pnpm install
 
 # Start development server
 pnpm run dev:server
-
+# Run unit tests (vitest), the type checker and the format check
 # Run unit tests (vitest) and the type checker
 pnpm test
 pnpm run type-check
+pnpm run format:check
 
 # Build for production
 pnpm run build
