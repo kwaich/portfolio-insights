@@ -15,7 +15,7 @@ First release.
 
 - Portfolio Insights page with per-holding FX attribution and contribution analysis
   - Period selector (1M, 3M, YTD, 1Y, since inception, custom) and account filter; the last choice is remembered in addon storage
-  - Summary of currency effect, total gain, simple return on average capital, and Wealthfolio's TWR for comparison
+  - Summary of currency effect, total gain, simple return on average capital, and Wealthfolio's TWR for comparison; hovering either return explains how it is calculated
   - Contribution chart split into price, FX and income; long fund names are shortened, with the full name on hover
   - Sortable table per holding and per cash currency, with totals and amounts in the base currency; income, price and FX effects also show their share of average capital as %
   - Contributions shown as % of average capital
