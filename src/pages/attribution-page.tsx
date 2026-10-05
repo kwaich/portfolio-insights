@@ -382,8 +382,11 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
 }
 
 function ValueCells({ c, money, signed }: { c: Components; money: Intl.NumberFormat; signed: Intl.NumberFormat }) {
-  const cell = (d: Decimal, f: Intl.NumberFormat, colored = false) => (
-    <TableCell className={`text-right tabular-nums ${colored ? signClass(d) : ''}`}>{f.format(d.toNumber())}</TableCell>
+  const cell = (d: Decimal, f: Intl.NumberFormat, colored = false, pp?: Decimal | null) => (
+    <TableCell className={`text-right tabular-nums ${colored ? signClass(d) : ''}`}>
+      {f.format(d.toNumber())}
+      {pp !== undefined && <div className="text-xs">{fmtPct(pp?.toNumber(), '–')}</div>}
+    </TableCell>
   );
   return (
     <>
@@ -391,8 +394,8 @@ function ValueCells({ c, money, signed }: { c: Components; money: Intl.NumberFor
       {cell(c.endValue, money)}
       {cell(c.netFlows, signed)}
       {cell(c.income, signed, true)}
-      {cell(c.priceEffect, signed, true)}
-      {cell(c.fxEffect, signed, true)}
+      {cell(c.priceEffect, signed, true, c.pricePp)}
+      {cell(c.fxEffect, signed, true, c.fxPp)}
       {cell(c.gain, signed, true)}
       <TableCell className={`text-right tabular-nums ${c.contributionPp ? signClass(c.contributionPp) : ''}`}>
         {fmtPct(c.contributionPp?.toNumber(), '–')}
