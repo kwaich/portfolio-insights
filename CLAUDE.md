@@ -53,11 +53,6 @@ pnpm bundle                       # clean + build + zip dist/<name>-<version>.zi
 - Supported: packaged images, fonts, media, CSS, WebAssembly. Files under `assets/` and `dist/assets/` are indexed automatically — load them with `ctx.assets.getBlob(path)` / `ctx.assets.getUrl(path)` (blob URLs only live for the addon's lifetime; no manifest entry needed).
 - **Not available:** workers/service workers, popups, direct network requests, remote CSS imports. Get data through `ctx.api`, not `fetch`.
 
-## Testing against a local Wealthfolio
-
-- `~/Projects/wealthfolio` is a local dev checkout (frontend on :1420, `pnpm dev:server` registers this addon on :3001). Debug addon failures from the browser console of `http://localhost:1420/addons/portfolio-insights`.
-- "Timed out rendering add-on route" with `Cannot read properties of null (reading 'useMemo')` means the host sandbox bundle has two Reacts. The usual cause is a `pnpm install` from `~/Projects`, whose parent workspace lists `wealthfolio/packages/*`. Fix it by running `pnpm install` inside `~/Projects/wealthfolio` and restarting its sandbox watcher. It is not an addon bug.
-
 ## Versioning
 
 Bump `version` in both `package.json` and `manifest.json` together, and update `CHANGELOG.md` (Keep a Changelog format).
