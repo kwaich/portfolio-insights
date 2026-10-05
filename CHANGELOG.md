@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Portfolio Insights page: period selector (1M, 3M, YTD, 1Y, since inception, custom), account filter, sortable attribution table with totals, contribution bar chart split into price/FX/income, reconciliation and data-gap alerts; last period/account remembered in addon storage
 
 ### Changed
+- Funds whose symbol is a Morningstar id (e.g. `0P0001AF7U`) are shown by name; long chart labels are shortened
+- Re-sync now shows a toast with the result: a warning if the gap is still there after re-downloading, otherwise a confirmation
 
 ### Deprecated
 

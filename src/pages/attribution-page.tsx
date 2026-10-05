@@ -118,21 +118,15 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'contributionPp', desc: true });
   const today = useMemo(() => new Date(), []);
 
-  const queryClient = useQueryClient();
-  const resync = useMutation({
-    mutationFn: (assetId: string) => resyncPrices(ctx.api, assetId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portfolio-insights', 'attribution'] }),
-    onError: (e) => ctx.api.toast.error(`Price re-sync failed: ${e instanceof Error ? e.message : String(e)}`),
-  });
-
   const accounts = useQuery({ queryKey: ['portfolio-insights', 'accounts'], queryFn: () => ctx.api.accounts.getAll() });
 
   const accountId = prefs && prefs.accountId !== ALL ? prefs.accountId : undefined;
   const custom = { from: prefs?.from ? parseISO(prefs.from) : undefined, to: prefs?.to ? parseISO(prefs.to) : undefined };
   const range = prefs ? periodRange(prefs.period, today, custom) : undefined;
 
+  const reportKey = ['portfolio-insights', 'attribution', accountId ?? ALL, range?.start ?? 'inception', range?.end];
   const report = useQuery({
-    queryKey: ['portfolio-insights', 'attribution', accountId ?? ALL, range?.start ?? 'inception', range?.end],
+    queryKey: reportKey,
     enabled: !!range,
     staleTime: 5 * 60_000,
     queryFn: async () => {
@@ -141,6 +135,25 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
       const twr = await loadTwr(ctx.api, loaded.accountIds, loaded.input.start, loaded.input.end);
       return { ...loaded, result, twr };
     },
+  });
+
+  const queryClient = useQueryClient();
+  const resync = useMutation({
+    mutationFn: (assetId: string) => resyncPrices(ctx.api, assetId),
+    onSuccess: async (_, assetId) => {
+      // Resolves once active report queries have refetched, so the cache holds the new gaps.
+      await queryClient.invalidateQueries({ queryKey: ['portfolio-insights', 'attribution'] });
+      const fresh = queryClient.getQueryData<typeof report.data>(reportKey);
+      const line = fresh?.result.lines.find((l) => l.kind === 'asset' && l.id === assetId);
+      const name = fresh?.names[assetId] ?? assetId;
+      if (line?.gaps.length) {
+        const gaps = line.gaps.map((g) => `${g.from} to ${g.to}`).join(', ');
+        ctx.api.toast.warning(`${name}: still no prices from ${gaps} after re-sync. The last known price is used.`);
+      } else {
+        ctx.api.toast.success(`${name}: prices updated.`);
+      }
+    },
+    onError: (e) => ctx.api.toast.error(`Price re-sync failed: ${e instanceof Error ? e.message : String(e)}`),
   });
 
   const data = report.data;
@@ -423,7 +436,14 @@ function ContributionChart({ lines, nameOf }: { lines: LineResult[]; nameOf: (l:
       <BarChart data={data} layout="vertical" stackOffset="sign" margin={{ left: 8, right: 16 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" />
         <XAxis type="number" tickFormatter={(v: number) => `${v.toFixed(1)}`} />
-        <YAxis type="category" dataKey="name" width={110} tickLine={false} axisLine={false} />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={190}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(v: string) => (v.length > 20 ? `${v.slice(0, 19)}…` : v)}
+        />
         <ReferenceLine x={0} stroke="var(--border)" />
         <ChartTooltip
           content={

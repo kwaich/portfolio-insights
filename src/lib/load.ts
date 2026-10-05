@@ -4,6 +4,7 @@ import { addDays, daysBetween } from './attribution/series';
 import type { AttributionInput, EngineActivity, PricePoint } from './attribution/types';
 
 const FX_CHUNK = 500;
+const MORNINGSTAR_ID = /^0P[0-9A-Z]{8}$/;
 
 // Activities carry a timestamp: take the user's local calendar day. Quote timestamps
 // are already exchange days, so take the date part as is.
@@ -56,7 +57,12 @@ export async function loadAttributionInput(
     .filter((a) => a.date <= opts.end);
 
   const names: Record<string, string> = {};
-  for (const a of rawActivities) if (!isCashAsset(a.assetId)) names[a.assetId] = a.assetSymbol || a.assetName || a.assetId;
+  for (const a of rawActivities) {
+    if (isCashAsset(a.assetId)) continue;
+    // Funds often have a Morningstar id (e.g. 0P0001AF7U) as their symbol; their name reads better.
+    const symbol = MORNINGSTAR_ID.test(a.assetSymbol) ? '' : a.assetSymbol;
+    names[a.assetId] = symbol || a.assetName || a.assetSymbol || a.assetId;
+  }
 
   const firstDay = activities.reduce((m, a) => (a.date < m ? a.date : m), opts.end);
   const start = opts.start ?? addDays(firstDay, -1);
