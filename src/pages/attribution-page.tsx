@@ -90,7 +90,7 @@ const chartConfig = {
   income: { label: 'Income', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
-const fmtPp = (d: Decimal | null) => (d ? `${d.gt(0) ? '+' : ''}${d.toFixed(2)} pp` : '–');
+const fmtPp = (d: Decimal | null) => (d ? `${d.gt(0) ? '+' : ''}${d.toFixed(2)}%` : '–');
 const fmtPct = (n: number | null | undefined) => (n == null ? 'n/a' : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`);
 const signClass = (d: Decimal) => (d.gt(0) ? 'text-success' : d.lt(0) ? 'text-destructive' : '');
 
@@ -250,28 +250,34 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
             )}
             {gapLines.length > 0 && (
               <Alert variant="warning">
-                <AlertTitle>Missing prices</AlertTitle>
-                <AlertDescription>
-                  <ul className="space-y-2">
-                    {gapLines.map((l) => (
-                      <li key={l.key} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span>
-                          {nameOf(l)}:{' '}
-                          {l.gaps.map((g) => `no price from ${g.from} to ${g.to} (${g.days} days)`).join('; ')}. The last known price was used
-                          for those days.
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={resync.isPending}
-                          onClick={() => resync.mutate(l.id)}
-                        >
-                          {resync.isPending && resync.variables === l.id ? 'Re-syncing…' : 'Re-sync prices'}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </AlertDescription>
+                <details>
+                  <summary className="cursor-pointer">
+                    <AlertTitle className="inline">
+                      Missing prices ({gapLines.length} {gapLines.length === 1 ? 'holding' : 'holdings'})
+                    </AlertTitle>
+                  </summary>
+                  <AlertDescription className="mt-2">
+                    <ul className="space-y-2">
+                      {gapLines.map((l) => (
+                        <li key={l.key} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span>
+                            {nameOf(l)}:{' '}
+                            {l.gaps.map((g) => `no price from ${g.from} to ${g.to} (${g.days} days)`).join('; ')}. The last known price was used
+                            for those days.
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={resync.isPending}
+                            onClick={() => resync.mutate(l.id)}
+                          >
+                            {resync.isPending && resync.variables === l.id ? 'Re-syncing…' : 'Re-sync prices'}
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </details>
               </Alert>
             )}
             {notices.length > 0 && (
@@ -295,7 +301,7 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
               <>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Contribution by holding (pp)</CardTitle>
+                    <CardTitle className="text-base">Contribution by holding (%)</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ContributionChart lines={rows} nameOf={nameOf} />
@@ -435,14 +441,20 @@ function ContributionChart({ lines, nameOf }: { lines: LineResult[]; nameOf: (l:
     <ChartContainer config={chartConfig} className="w-full" style={{ height: Math.max(160, data.length * 32 + 60) }}>
       <BarChart data={data} layout="vertical" stackOffset="sign" margin={{ left: 8, right: 16 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-        <XAxis type="number" tickFormatter={(v: number) => `${v.toFixed(1)}`} />
+        <XAxis type="number" tickFormatter={(v: number) => `${v.toFixed(1)}%`} />
         <YAxis
           type="category"
           dataKey="name"
           width={190}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: string) => (v.length > 20 ? `${v.slice(0, 19)}…` : v)}
+          // A plain <text> instead of recharts' default tick, which wraps long labels onto two lines.
+          tick={({ x, y, payload }: { x: number | string; y: number | string; payload: { value: string } }) => (
+            <text x={x} y={y} dy={4} textAnchor="end" fontSize={12}>
+              <title>{payload.value}</title>
+              {payload.value.length > 20 ? `${payload.value.slice(0, 19)}…` : payload.value}
+            </text>
+          )}
         />
         <ReferenceLine x={0} stroke="var(--border)" />
         <ChartTooltip
@@ -451,7 +463,7 @@ function ContributionChart({ lines, nameOf }: { lines: LineResult[]; nameOf: (l:
               formatter={(v, name) => (
                 <div className="flex w-full justify-between gap-4">
                   <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
-                  <span className="font-mono tabular-nums">{Number(v).toFixed(2)} pp</span>
+                  <span className="font-mono tabular-nums">{Number(v).toFixed(2)}%</span>
                 </div>
               )}
             />
