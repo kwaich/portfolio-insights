@@ -17,7 +17,7 @@ First release.
   - Period selector (1M, 3M, YTD, 1Y, since inception, custom) and account filter; the last choice is remembered in addon storage
   - Summary of currency effect, total gain, simple return on average capital, and Wealthfolio's TWR for comparison
   - Contribution chart split into price, FX and income; long fund names are shortened, with the full name on hover
-  - Sortable table per holding and per cash currency, with totals
+  - Sortable table per holding and per cash currency, with totals; price and FX effects also show their share of average capital as %
   - Contributions shown as % of average capital
 - Attribution engine (`src/lib/attribution`): daily price/FX/income attribution in decimal maths, with vitest unit tests
   - Income converted at the payment-date FX rate; trades take effect from the next day
