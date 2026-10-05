@@ -98,7 +98,11 @@ const pct = new Intl.NumberFormat(undefined, {
 });
 /** `n` is in percent (pp); `empty` when it can't be computed. */
 const fmtPct = (n: number | null | undefined, empty = 'n/a') => (n == null ? empty : pct.format(n / 100));
-const signClass = (d: Decimal) => (d.gt(0) ? 'text-success' : d.lt(0) ? 'text-destructive' : '');
+// Colour by the value as shown (2 dp), so a figure that rounds to zero stays uncoloured.
+const signClass = (d: Decimal) => {
+  const r = d.toDecimalPlaces(2);
+  return r.gt(0) ? 'text-success' : r.lt(0) ? 'text-destructive' : '';
+};
 
 function usePrefs(ctx: AddonContext) {
   const [prefs, setPrefs] = useState<Prefs | null>(null);
