@@ -30,3 +30,6 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Local-only Claude Code notes
+CLAUDE.local.md

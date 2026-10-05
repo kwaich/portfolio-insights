@@ -6,9 +6,7 @@ A Wealthfolio addon that breaks each holding's return into price, currency (FX) 
 
 ```bash
 # Install dependencies
-# NOTE: --ignore-workspace is required because this folder sits under
-# ../pnpm-workspace.yaml, which does not list it.
-pnpm install --ignore-workspace
+pnpm install
 
 # Start development server
 pnpm run dev:server
