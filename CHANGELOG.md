@@ -7,42 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial addon structure and setup
-- Attribution engine (`src/lib/attribution`): daily price/FX/income attribution, contribution in pp of average capital, reconciliation checks, quote-gap detection, with vitest unit tests
-- Data loader mapping Wealthfolio activities, quotes and FX rates onto the engine
-- "Re-sync prices" button on missing-price notes: asks Wealthfolio to re-download that holding's quote history (`market-data` and `events` permissions), then reloads the report
-- Portfolio Insights page: period selector (1M, 3M, YTD, 1Y, since inception, custom), account filter, sortable attribution table with totals, contribution bar chart split into price/FX/income, reconciliation and data-gap alerts; last period/account remembered in addon storage
+## [1.0.0] - 2026-10-05
 
-### Changed
-- Funds whose symbol is a Morningstar id (e.g. `0P0001AF7U`) are shown by name; long chart labels are shortened
-- Re-sync now shows a toast with the result: a warning if the gap is still there after re-downloading, otherwise a confirmation
-
-### Deprecated
-
-### Removed
-
-### Fixed
-- Splits follow Wealthfolio's rules: the ratio comes from `amount`, falling back to `quantity`; quotes that weren't split-adjusted by the provider are detected and adjusted; the same split recorded twice within a day (e.g. in two accounts) counts once
-- Wealthfolio's TWR for several accounts now uses the host's account-scope filter (the legacy `TOTAL` id failed, so "All accounts" showed n/a)
-- Cash now follows Wealthfolio's own booking rules: a foreign-currency BUY/SELL with an `fxRate` settles in the account currency (it used to create a negative foreign-cash balance), and `amount` is the final cash with fees/taxes already included (fees and taxes were subtracted twice for dividends, deposits and withdrawals)
-- Price gaps are only flagged on days the holding is actually held (no more false alarms for holdings bought mid-period)
-
-### Security
-
-## [1.0.0] - {{currentDate}}
+First release.
 
 ### Added
-- Initial release of portfolio-insights addon
-- Basic addon functionality and core features
-- Integration with Wealthfolio addon SDK v3.9.0
-- Sidebar navigation integration for easy access
-- Responsive design for all screen sizes
-
-### Features
-- A Wealthfolio addon for portfolio-insights
-- User-friendly interface
-- Compatible with Wealthfolio platform
+- Portfolio Insights page with per-holding FX attribution and contribution analysis
+  - Period selector (1M, 3M, YTD, 1Y, since inception, custom) and account filter; the last choice is remembered in addon storage
+  - Summary of currency effect, total gain, simple return on average capital, and Wealthfolio's TWR for comparison
+  - Contribution chart split into price, FX and income; long fund names are shortened, with the full name on hover
+  - Sortable table per holding and per cash currency, with totals
+  - Contributions shown as % of average capital
+- Attribution engine (`src/lib/attribution`): daily price/FX/income attribution in decimal maths, with vitest unit tests
+  - Income converted at the payment-date FX rate; trades take effect from the next day
+  - Foreign cash gets an FX-only line; sold holdings stay in the report
+  - Cash booking and splits follow Wealthfolio's own engine (settlement via `fxRate`, `amount` as final cash, split ratio from `amount` or `quantity`, duplicate splits merged, unadjusted quotes detected)
+- Reconciliation check per holding and for the total; failures are shown on the page
+- Data checks: prices and FX rates are forward-filled, and gaps over 5 days while a holding is held are flagged
+  - The "Missing prices" alert is collapsible and shows how many holdings are affected
+  - "Re-sync prices" asks Wealthfolio to re-download a holding's quote history, reloads the report, and says whether the gap is still there
+- Funds whose symbol is a Morningstar id (e.g. `0P0001AF7U`) are shown by name
+- Holdings-mode accounts (no trade history) are excluded with a note
 
 ### Compatibility
 - Requires Wealthfolio 3.9.0 or newer
+- Permissions: accounts, settings, activities, quotes, currency rates, performance, market-data sync and portfolio update events; no network access

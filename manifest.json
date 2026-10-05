@@ -1,8 +1,8 @@
 {
   "id": "portfolio-insights",
-  "name": "portfolio-insights",
+  "name": "Portfolio Insights",
   "version": "1.0.0",
-  "description": "A Wealthfolio addon for portfolio-insights",
+  "description": "Splits each holding's gain into price, currency and income effects, and shows its contribution to portfolio return",
   "author": "kwaich",
   "main": "dist/addon.js",
   "sdkVersion": "3.9.0",
