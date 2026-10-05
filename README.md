@@ -41,6 +41,10 @@ entry points, popups, direct network requests, and remote CSS imports are intent
 
 Known limits: accounts that track holdings without transactions are excluded, because they have no trade history. FX rate gaps can't be detected, because Wealthfolio fills them in silently.
 
+## Screenshots
+
+<img width="1440" height="960" alt="image" src="https://github.com/user-attachments/assets/6fefc6c1-fa4d-4724-92be-1325b31ee0db" />
+
 ## License
 
 MIT
