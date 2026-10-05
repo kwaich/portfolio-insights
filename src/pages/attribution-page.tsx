@@ -442,10 +442,16 @@ function Summary({
             Total gain{' '}
             <span className={`text-foreground font-medium ${signClass(total.gain)}`}>{signed.format(total.gain.toNumber())}</span>
           </span>
-          <span>
+          <span
+            className="cursor-help underline decoration-dotted underline-offset-4"
+            title="Total gain ÷ average daily portfolio value. Money added mid-period only counts for the days it was invested, so this is what your money actually earned. Holdings' contributions add up to it."
+          >
             Simple return on average capital <span className="text-foreground font-medium">{fmtPct(total.contributionPp?.toNumber())}</span>
           </span>
-          <span>
+          <span
+            className="cursor-help underline decoration-dotted underline-offset-4"
+            title="Time-weighted return: daily returns compounded, so the timing and size of deposits and withdrawals have no effect. It differs from simple return when money moved in or out during the period."
+          >
             Wealthfolio TWR <span className="text-foreground font-medium">{fmtPct(twr == null ? null : twr * 100)}</span>
           </span>
         </div>
