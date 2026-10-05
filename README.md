@@ -17,7 +17,7 @@ pnpm run dev:server
 pnpm test
 pnpm run type-check
 
-# Build for production (the Vite config enables watch mode, so stop it with Ctrl-C)
+# Build for production
 pnpm run build
 
 # Package addon

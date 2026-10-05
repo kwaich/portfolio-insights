@@ -10,7 +10,7 @@ A [Wealthfolio](https://wealthfolio.app) addon (SDK 3.9) with one page: per-hold
 
 ```bash
 pnpm install --ignore-workspace   # REQUIRED flag: a parent pnpm-workspace.yaml (../pnpm-workspace.yaml) doesn't list this folder
-pnpm build                        # vite build → dist/addon.js (never exits: vite.config.ts sets build.watch)
+pnpm build                        # vite build → dist/addon.js
 pnpm dev                          # vite build --watch
 pnpm dev:server                   # wealthfolio-addon dev (hot-reload into a running Wealthfolio)
 pnpm type-check                   # tsc --noEmit (also what `pnpm lint` runs; there is no ESLint)
