@@ -1,6 +1,6 @@
 # Portfolio Insights
 
-A Wealthfolio addon that breaks each holding's return into price, currency (FX) and income effects, and shows how much each holding contributed to the portfolio's return.
+A [Wealthfolio](https://wealthfolio.app) addon that breaks each holding's return into price, currency (FX) and income effects, and shows how much each holding contributed to the portfolio's return.
 
 ## Development
 
