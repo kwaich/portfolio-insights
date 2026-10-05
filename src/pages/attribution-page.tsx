@@ -182,6 +182,12 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
   const ccy = data?.result.baseCurrency ?? 'USD';
   const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy }), [ccy]);
   const signed = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy, signDisplay: 'exceptZero' }), [ccy]);
+  // The table states the currency once in its title, so its cells are plain numbers.
+  const amount = useMemo(() => new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), []);
+  const signedAmount = useMemo(
+    () => new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: 'exceptZero' }),
+    [],
+  );
 
   const notices = data
     ? [
@@ -320,6 +326,9 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
                 </Card>
 
                 <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Holdings ({ccy})</CardTitle>
+                  </CardHeader>
                   <CardContent className="overflow-x-auto p-0">
                     <Table>
                       <TableHeader>
@@ -345,7 +354,7 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
                       <TableBody>
                         {rows.map((l) => (
                           <TableRow key={l.key}>
-                            <TableCell className="font-medium">
+                            <TableCell className="font-medium whitespace-nowrap">
                               <span className="inline-flex items-center gap-1">
                                 {nameOf(l)}
                                 {!l.reconciled && (
@@ -359,14 +368,14 @@ export function AttributionPage({ ctx }: { ctx: AddonContext }) {
                                 <span className="text-muted-foreground ml-1 text-xs">{l.currency}</span>
                               )}
                             </TableCell>
-                            <ValueCells c={l} money={money} signed={signed} />
+                            <ValueCells c={l} money={amount} signed={signedAmount} />
                           </TableRow>
                         ))}
                       </TableBody>
                       <TableFooter>
                         <TableRow className="font-semibold">
                           <TableCell>Total</TableCell>
-                          <ValueCells c={data.result.total} money={money} signed={signed} />
+                          <ValueCells c={data.result.total} money={amount} signed={signedAmount} />
                         </TableRow>
                       </TableFooter>
                     </Table>
@@ -385,7 +394,7 @@ function ValueCells({ c, money, signed }: { c: Components; money: Intl.NumberFor
   const cell = (d: Decimal, f: Intl.NumberFormat, colored = false, pp?: Decimal | null) => (
     <TableCell className={`text-right tabular-nums ${colored ? signClass(d) : ''}`}>
       {f.format(d.toNumber())}
-      {pp !== undefined && <div className="text-xs">{fmtPct(pp?.toNumber(), '–')}</div>}
+      {pp !== undefined && <div className={`text-xs ${(pp && signClass(pp)) || 'text-foreground'}`}>{fmtPct(pp?.toNumber(), '–')}</div>}
     </TableCell>
   );
   return (
@@ -393,7 +402,7 @@ function ValueCells({ c, money, signed }: { c: Components; money: Intl.NumberFor
       {cell(c.startValue, money)}
       {cell(c.endValue, money)}
       {cell(c.netFlows, signed)}
-      {cell(c.income, signed, true)}
+      {cell(c.income, signed, true, c.incomePp)}
       {cell(c.priceEffect, signed, true, c.pricePp)}
       {cell(c.fxEffect, signed, true, c.fxPp)}
       {cell(c.gain, signed, true)}
