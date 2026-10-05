@@ -4,6 +4,7 @@ import { addDays, daysBetween } from './attribution/series';
 import type { AttributionInput, EngineActivity, PricePoint } from './attribution/types';
 
 const FX_CHUNK = 500;
+const SYNC_TIMEOUT_MS = 120_000;
 const MORNINGSTAR_ID = /^0P[0-9A-Z]{8}$/;
 
 // Activities carry a timestamp: take the user's local calendar day. Quote timestamps
@@ -11,7 +12,7 @@ const MORNINGSTAR_ID = /^0P[0-9A-Z]{8}$/;
 const localDay = (d: Date | string) => format(new Date(d), 'yyyy-MM-dd');
 const isCashAsset = (id?: string | null) => !id || id.startsWith('$CASH');
 
-export interface LoadedInput {
+interface LoadedInput {
   input: AttributionInput;
   /** HOLDINGS-mode accounts have no trade history, so they are left out. */
   excludedAccounts: string[];
@@ -129,11 +130,11 @@ export async function loadTwr(api: HostAPI, accountIds: string[], start: string,
  * Re-download an asset's quote history. `market.sync` only queues a background job on the
  * host, so wait for Wealthfolio's portfolio-update event before reporting completion.
  */
-export async function resyncPrices(api: HostAPI, assetId: string, timeoutMs = 120_000): Promise<void> {
+export async function resyncPrices(api: HostAPI, assetId: string): Promise<void> {
   let unlisten: UnlistenFn[] = [];
   try {
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Wealthfolio did not finish the price sync in time')), timeoutMs);
+      const timer = setTimeout(() => reject(new Error('Wealthfolio did not finish the price sync in time')), SYNC_TIMEOUT_MS);
       const settle = (fn: () => void) => () => {
         clearTimeout(timer);
         fn();

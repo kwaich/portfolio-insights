@@ -90,8 +90,14 @@ const chartConfig = {
   income: { label: 'Income', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
-const fmtPp = (d: Decimal | null) => (d ? `${d.gt(0) ? '+' : ''}${d.toFixed(2)}%` : '–');
-const fmtPct = (n: number | null | undefined) => (n == null ? 'n/a' : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`);
+const pct = new Intl.NumberFormat(undefined, {
+  style: 'percent',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  signDisplay: 'exceptZero',
+});
+/** `n` is in percent (pp); `empty` when it can't be computed. */
+const fmtPct = (n: number | null | undefined, empty = 'n/a') => (n == null ? empty : pct.format(n / 100));
 const signClass = (d: Decimal) => (d.gt(0) ? 'text-success' : d.lt(0) ? 'text-destructive' : '');
 
 function usePrefs(ctx: AddonContext) {
@@ -385,7 +391,7 @@ function ValueCells({ c, money, signed }: { c: Components; money: Intl.NumberFor
       {cell(c.fxEffect, signed, true)}
       {cell(c.gain, signed, true)}
       <TableCell className={`text-right tabular-nums ${c.contributionPp ? signClass(c.contributionPp) : ''}`}>
-        {fmtPp(c.contributionPp)}
+        {fmtPct(c.contributionPp?.toNumber(), '–')}
       </TableCell>
     </>
   );
@@ -404,13 +410,12 @@ function Summary({
   start: string;
   end: string;
 }) {
-  const fxPp = total.fxPp;
   return (
     <Card>
       <CardContent className="space-y-3 p-6">
         <p className="text-lg">
-          {fxPp
-            ? `Currency moves contributed ${fmtPp(fxPp)} this period.`
+          {total.fxPp
+            ? `Currency moves contributed ${fmtPct(total.fxPp.toNumber())} this period.`
             : 'No capital was invested during this period, so contributions cannot be computed.'}
         </p>
         <div className="text-muted-foreground flex flex-wrap gap-x-8 gap-y-2 text-sm">

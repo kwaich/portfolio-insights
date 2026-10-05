@@ -2,7 +2,7 @@ import Decimal from 'decimal.js';
 import type { Gap, PricePoint } from './types';
 
 const DAY_MS = 86_400_000;
-export const MAX_GAP_DAYS = 5;
+const MAX_GAP_DAYS = 5;
 
 /** Calendar days from `a` to `b` (both YYYY-MM-DD). */
 export const diffDays = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / DAY_MS);
@@ -23,7 +23,7 @@ export function daysBetween(start: string, end: string): string[] {
  * Returns null when there are no observations at all.
  */
 export function fillDaily(points: PricePoint[], days: string[]): { values: Decimal[]; gaps: Gap[] } | null {
-  const sorted = [...points].sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
+  const sorted = [...points].sort((x, y) => x.date.localeCompare(y.date));
   if (sorted.length === 0) return null;
   const start = days[0];
   const end = days[days.length - 1];

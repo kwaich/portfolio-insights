@@ -3,7 +3,7 @@ import { daysBetween, diffDays, fillDaily } from './series';
 import type { AttributionInput, AttributionResult, Components, EngineActivity, Gap, LineResult, PricePoint } from './types';
 
 /** Max |residual| in base currency for a reconciliation to pass. */
-export const TOLERANCE = new Decimal('0.01');
+const TOLERANCE = new Decimal('0.01');
 
 const ZERO = new Decimal(0);
 const num = (v?: string | null) => new Decimal(v == null || v === '' ? 0 : v);
@@ -51,7 +51,7 @@ export function attribute(input: AttributionInput): AttributionResult {
   // else quantity; rows for one asset within a day of each other are one split (e.g. the same
   // split recorded in two accounts).
   const splits = new Map<string, { date: string; ratio: Decimal }[]>();
-  for (const a of [...activities].sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0))) {
+  for (const a of [...activities].sort((x, y) => x.date.localeCompare(y.date))) {
     if (a.type !== 'SPLIT' || !a.assetId) continue;
     const ratio = num(a.amount).gt(0) ? num(a.amount) : num(a.quantity).abs();
     if (ratio.lte(0)) {
@@ -289,14 +289,14 @@ const relativeDistance = (v: Decimal, target: Decimal) => v.minus(target).abs().
  * by the provider when the close just before it is nearer the close just after it than
  * `ratio` times it; otherwise the earlier closes are divided by the ratio.
  */
-export function splitAdjusted(points: PricePoint[], splits: { date: string; ratio: Decimal }[]): PricePoint[] {
+function splitAdjusted(points: PricePoint[], splits: { date: string; ratio: Decimal }[]): PricePoint[] {
   const unadjusted = splits.filter(({ date, ratio }) => {
     if (ratio.eq(1)) return false;
     const before = points
       .filter((p) => p.date < date)
-      .sort((x, y) => (x.date < y.date ? -1 : 1))
+      .sort((x, y) => x.date.localeCompare(y.date))
       .at(-1);
-    const after = points.filter((p) => p.date >= date).sort((x, y) => (x.date < y.date ? -1 : 1))[0];
+    const after = points.filter((p) => p.date >= date).sort((x, y) => x.date.localeCompare(y.date))[0];
     if (!before || !after || new Decimal(before.value).lte(0) || new Decimal(after.value).lte(0)) return false;
     const observed = new Decimal(before.value).div(after.value);
     return relativeDistance(observed, new Decimal(1)).gte(relativeDistance(observed, ratio));

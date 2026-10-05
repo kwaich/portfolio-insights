@@ -14,9 +14,8 @@
     "dev": "vite build --watch",
     "dev:server": "wealthfolio-addon dev",
     "clean": "rm -rf dist",
-    "package": "mkdir -p dist assets && find dist -name '*.map' -delete && zip -r dist/$npm_package_name-$npm_package_version.zip manifest.json dist/ assets/ README.md -x '*.map'",
+    "package": "mkdir -p assets && zip -r dist/$npm_package_name-$npm_package_version.zip manifest.json dist/ assets/ README.md",
     "bundle": "pnpm clean && pnpm build && pnpm package",
-    "lint": "tsc --noEmit",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
@@ -33,9 +32,7 @@
     "recharts": "^3.7.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.13",
     "@tanstack/react-query": "^5.90.20",
-    "@types/node": "^20.0.0",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.2",
@@ -48,7 +45,6 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.7.0",
-    "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
     "vitest": "^5.0.3"

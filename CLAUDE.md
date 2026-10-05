@@ -13,7 +13,7 @@ pnpm install
 pnpm build                        # vite build → dist/addon.js
 pnpm dev                          # vite build --watch
 pnpm dev:server                   # wealthfolio-addon dev (hot-reload into a running Wealthfolio)
-pnpm type-check                   # tsc --noEmit (also what `pnpm lint` runs; there is no ESLint)
+pnpm type-check                   # tsc --noEmit (there is no ESLint)
 pnpm test                         # vitest run (src/**/*.test.ts)
 pnpm format                       # prettier --write . (CI runs pnpm format:check)
 pnpm bundle                       # clean + build + zip dist/<name>-<version>.zip for distribution
@@ -26,10 +26,9 @@ pnpm bundle                       # clean + build + zip dist/<name>-<version>.zi
 - **Data fetching:** wrap pages in `QueryClientProvider` using `ctx.api.query.getClient()` — the addon's isolated React Query cache, with invalidations bridged to the host.
 - **Routing/navigation is declared in `manifest.json`** (`contributes.routes` / `contributes.links.sidebar`), so the sidebar renders without booting the addon. The `id` passed to `ctx.router.add` must match `contributes.routes[].id`; path is `/addons/<addon id>`.
 - **Host-provided dependencies:** React, react-dom, `@wealthfolio/addon-sdk`, `@wealthfolio/ui` (incl. `/chart`), `@tanstack/react-query`, `date-fns`, `lucide-react`, `recharts` are supplied by the host at runtime. They must stay in three places in sync: `peerDependencies` in `package.json`, `hostDependencies` in `manifest.json`, and the `hostProvidedDependencies` externals list in `vite.config.ts`. Adding a new SDK subpath import requires adding it to the Vite externals list. Any other dependency gets bundled into `addon.js`.
-- **UI:** use components from `@wealthfolio/ui` and Tailwind v4 classes (via `@tailwindcss/vite`).
+- **UI:** use components from `@wealthfolio/ui` and Tailwind classes. The addon ships no CSS; classes are styled by the host's stylesheet.
 - **Permissions:** declared in `manifest.json` (accounts.getAll, settings.get, activities.getAll, quotes.getHistory, currency.getRatesForDates, performance.calculateSummary, market-data.sync, events.onUpdateComplete/onUpdateError). Calling any other host API needs a new entry. The SDK's `dist/src/permissions.d.ts` / `PERMISSION_CATEGORIES` is the authority: only `ui, navigation, query, toast, logger, storage` are baseline (the online docs disagree).
 - **Storage:** `ctx.api.storage` (key `ui.prefs`) holds UI preferences only (period, account, custom range). Never store financial data there. `localStorage` is unavailable in the sandbox.
-- `src/{components,hooks,lib,pages,types}/index.ts` are empty barrel stubs from the template.
 
 ## Code layout
 
