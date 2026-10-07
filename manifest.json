@@ -1,7 +1,7 @@
 {
   "id": "portfolio-insights",
   "name": "Portfolio Insights",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Splits each holding's gain into price, currency and income effects, and shows its contribution to portfolio return",
   "author": "kwaich",
   "main": "dist/addon.js",
@@ -51,6 +51,11 @@
       "category": "activities",
       "functions": ["getAll"],
       "purpose": "Rebuild daily quantities, cash balances and income"
+    },
+    {
+      "category": "assets",
+      "functions": ["getProfile"],
+      "purpose": "Read option contract multipliers so option positions are valued per contract"
     },
     {
       "category": "quotes",

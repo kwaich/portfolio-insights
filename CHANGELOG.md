@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-08
+
+### Fixed
+
+- Expired options (Wealthfolio's `OPTION_EXPIRY` adjustments) now close the position; before, they stayed in the table at their last price in every later period
+- Options are valued per contract using the asset's contract multiplier (usually 100); before, they were valued as single shares. Needs the new `assets.getProfile` permission
+
 ## [1.0.1] - 2026-10-06
 
 ### Changed

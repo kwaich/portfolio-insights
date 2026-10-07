@@ -3,8 +3,10 @@ import type Decimal from 'decimal.js';
 /** Dates are calendar days, YYYY-MM-DD. Money/quantity fields are decimal strings. */
 export interface EngineActivity {
   date: string;
-  /** BUY, SELL, SPLIT, DIVIDEND, INTEREST, DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT, FEE, TAX, CREDIT */
+  /** BUY, SELL, SPLIT, DIVIDEND, INTEREST, DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT, FEE, TAX, CREDIT, ADJUSTMENT */
   type: string;
+  /** ADJUSTMENT with OPTION_EXPIRY closes `quantity` of an option at zero. */
+  subtype?: string | null;
   /** Omit for pure cash activities. */
   assetId?: string | null;
   quantity?: string | null;
@@ -34,6 +36,8 @@ export interface AttributionInput {
   activities: EngineActivity[];
   /** Split-adjusted daily closes per asset, in the asset's quote currency. */
   quotes: Record<string, { currency: string; points: PricePoint[] }>;
+  /** Units per contract per asset (options: usually 100); missing means 1. Quotes and unit prices are per unit. */
+  multipliers?: Record<string, string>;
   /** Units of base currency per 1 unit of the keyed currency. The base currency itself is implied as 1. */
   fxToBase: Record<string, PricePoint[]>;
 }

@@ -1,4 +1,4 @@
-import type { HostAPI, Quote, UnlistenFn } from '@wealthfolio/addon-sdk';
+import type { Asset, HostAPI, Quote, UnlistenFn } from '@wealthfolio/addon-sdk';
 import { format } from 'date-fns';
 import { addDays, daysBetween } from './attribution/series';
 import type { AttributionInput, EngineActivity, PricePoint } from './attribution/types';
@@ -30,7 +30,28 @@ export type BaseData = Awaited<ReturnType<typeof loadBase>>;
 /** Everything that doesn't depend on the chosen period or account. */
 export async function loadBase(api: HostAPI) {
   const [settings, accounts, activities] = await Promise.all([api.settings.get(), api.accounts.getAll(), api.activities.getAll()]);
-  return { settings, accounts, activities };
+  const assetIds = [...new Set(activities.flatMap((a) => (isCashAsset(a.assetId) ? [] : [a.assetId])))];
+  const multipliers: Record<string, string> = {};
+  const profileErrors: string[] = [];
+  await Promise.all(
+    assetIds.map((id) =>
+      api.assets.getProfile(id).then(
+        (asset) => void (multipliers[id] = contractMultiplier(asset)),
+        (e) => void profileErrors.push(`Asset profile for ${id} unavailable (${e}); valued at 1 unit per contract`),
+      ),
+    ),
+  );
+  return { settings, accounts, activities, multipliers, profileErrors };
+}
+
+/** Mirrors Wealthfolio's `contract_multiplier_from_asset_metadata` (core/src/assets/assets_model.rs). */
+function contractMultiplier(asset: Asset): string {
+  const isOption = asset.instrumentType === 'OPTION';
+  const m = asset.metadata ?? {};
+  const option = m.option as { multiplier?: unknown } | undefined;
+  const explicit = isOption && option?.multiplier != null ? option.multiplier : m.contractMultiplier;
+  const n = Number(explicit);
+  return explicit != null && n > 0 ? String(explicit) : isOption ? '100' : '1';
 }
 
 /** `start: null` means since inception (the day before the first activity). */
@@ -52,6 +73,7 @@ export async function loadAttributionInput(
     .map((a) => ({
       date: localDay(a.date),
       type: a.activityType,
+      subtype: a.subtype,
       assetId: isCashAsset(a.assetId) ? null : a.assetId,
       quantity: a.quantity,
       unitPrice: a.unitPrice,
@@ -79,7 +101,7 @@ export async function loadAttributionInput(
   const twr = loadTwr(api, accountIds, start, opts.end);
 
   const days = daysBetween(start, opts.end);
-  const warnings = new Set<string>();
+  const warnings = new Set<string>(base.profileErrors);
   const fxToBase: Record<string, PricePoint[]> = {};
   const fetchRates = async (currencies: Set<string>) => {
     currencies.delete(baseCurrency);
@@ -114,7 +136,7 @@ export async function loadAttributionInput(
   );
 
   return {
-    input: { baseCurrency, start, end: opts.end, activities, quotes, fxToBase },
+    input: { baseCurrency, start, end: opts.end, activities, quotes, fxToBase, multipliers: base.multipliers },
     excludedAccounts: excluded.map((a) => a.name),
     accountIds,
     warnings: [...warnings],

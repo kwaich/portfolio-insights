@@ -65,6 +65,11 @@ export function attribute(input: AttributionInput): AttributionResult {
   const splitFactor = (assetId: string, date: string) =>
     (splits.get(assetId) ?? []).filter((s) => s.date > date).reduce((f, s) => f.times(s.ratio), new Decimal(1));
 
+  const multiplier = (assetId?: string | null) => {
+    const m = num(assetId ? input.multipliers?.[assetId] : null);
+    return m.gt(0) ? m : new Decimal(1);
+  };
+
   const lines = new Map<string, Line>();
   const getLine = (kind: Line['kind'], id: string, currency: string) => {
     const key = `${kind}:${id}`;
@@ -73,7 +78,8 @@ export function attribute(input: AttributionInput): AttributionResult {
   };
 
   const ignored = new Map<string, number>();
-  for (const a of activities) bookActivity(a);
+  // In date order, so an option expiry knows the position it closes.
+  for (const a of [...activities].sort((x, y) => x.date.localeCompare(y.date))) bookActivity(a);
 
   // Cash follows Wealthfolio's portfolio engine: `amount` is the final cash (fees/taxes included);
   // only when it is missing do we derive it from quantity × price ± charges.
@@ -82,7 +88,7 @@ export function attribute(input: AttributionInput): AttributionResult {
     const add = (l: Line, ev: Omit<Ev, 'date' | 'ccy'> & { ccy?: string }) => l.events.push({ date: a.date, ccy, ...ev });
     const cash = (c = ccy) => getLine('cash', c, c);
     const asset = a.assetId ? getLine('asset', a.assetId, input.quotes[a.assetId]?.currency ?? ccy) : undefined;
-    const q = num(a.quantity).abs();
+    const q = num(a.quantity).abs().times(multiplier(a.assetId));
     const p = num(a.unitPrice).abs();
     const hasAmount = a.amount != null && a.amount !== '';
     const amount = num(a.amount).abs();
@@ -138,6 +144,16 @@ export function attribute(input: AttributionInput): AttributionResult {
       }
       case 'SPLIT':
         return;
+      case 'ADJUSTMENT':
+        if (a.subtype === 'OPTION_EXPIRY' && asset) {
+          // Like Wealthfolio: the position (long or short) shrinks toward zero with no proceeds,
+          // so the value lost at expiry lands in the price effect.
+          const held = sum(asset.events.map((e) => e.dq));
+          const expired = Decimal.min(a.quantity ? q.times(splitFactor(asset.id, a.date)) : held.abs(), held.abs());
+          add(asset, { dq: expired.times(-held.s), kind: 'flow', amount: ZERO });
+          return;
+        }
+      // falls through: other adjustments are not modelled
       default:
         ignored.set(a.type, (ignored.get(a.type) ?? 0) + 1);
     }

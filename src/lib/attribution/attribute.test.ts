@@ -155,6 +155,36 @@ describe('edge cases', () => {
     expect(x.gain.toNumber()).toBe(119);
   });
 
+  it('an expired option leaves the period it expires in and is gone afterwards', () => {
+    const activities = [
+      act({ date: D0, type: 'BUY', assetId: 'C', quantity: '2', unitPrice: '5' }),
+      act({ date: D0, type: 'SELL', assetId: 'P', quantity: '1', unitPrice: '3' }),
+      act({ date: D1, type: 'ADJUSTMENT', subtype: 'OPTION_EXPIRY', assetId: 'C', quantity: '2' }),
+      act({ date: D1, type: 'ADJUSTMENT', subtype: 'OPTION_EXPIRY', assetId: 'P', quantity: '1' }),
+    ];
+    const optionQuotes = { C: quotes('SGD', [D0, 5], [D1, 1]), P: quotes('SGD', [D0, 3], [D1, 1]) };
+    const r = run({ activities, quotes: optionQuotes });
+    expect(line(r, 'asset:C').gain.toNumber()).toBe(-10); // long call loses its premium
+    expect(line(r, 'asset:P').gain.toNumber()).toBe(3); // short put keeps its premium
+    expect(line(r, 'asset:C').endValue.toNumber()).toBe(0);
+    expect(r.warnings).toEqual([]);
+
+    const later = run({ start: D1, end: D2, activities, quotes: optionQuotes });
+    expect(later.lines.map((l) => l.key)).toEqual(['cash:SGD']);
+  });
+
+  it('option quantities are scaled by the contract multiplier; quotes stay per share', () => {
+    const r = run({
+      activities: [act({ date: D0, type: 'BUY', assetId: 'C', quantity: '2', unitPrice: '5', amount: '1000' })],
+      quotes: { C: quotes('SGD', [D0, 5], [D1, 6]) },
+      multipliers: { C: '100' },
+    });
+    const c = line(r, 'asset:C');
+    expect(c.startValue.toNumber()).toBe(1000);
+    expect(c.endValue.toNumber()).toBe(1200);
+    expect(r.total.reconciled).toBe(true); // cash paid 1000 matches the position's value
+  });
+
   it('base-currency holding has exactly zero FX effect', () => {
     const r = run({
       activities: [
