@@ -33,7 +33,7 @@ pnpm bundle                       # clean + build + zip dist/<name>-<version>.zi
 ## Code layout
 
 - `src/lib/attribution/` is a pure TypeScript engine with no SDK imports; all money maths uses `decimal.js` (bundled). `attribute.ts` is the engine, `series.ts` does daily forward-fill and gap detection (>5 days), and `types.ts` holds the input/output shapes.
-- `src/lib/load.ts` maps SDK data (activities, quote history, `getRatesForDates`) onto engine input and fetches Wealthfolio's TWR. Several accounts are passed as `filter: { type: 'accounts', accountIds }`, which the bridge forwards but the SDK type omits; `TOTAL` is a dead legacy id. HOLDINGS-mode accounts are excluded.
+- `src/lib/load.ts` maps SDK data (activities, quote history, `getRatesForDates`) onto engine input and fetches Wealthfolio's TWR. `loadBase` (cached across period changes) also reads each asset's profile for its contract multiplier; a failed profile becomes a page warning, not an error. Several accounts are passed as `filter: { type: 'accounts', accountIds }`, which the bridge forwards but the SDK type omits; `TOTAL` is a dead legacy id. HOLDINGS-mode accounts are excluded.
 - `src/lib/load.ts` also has `resyncPrices`: `market.sync` only queues a host job (despite the SDK doc), so it waits for `portfolio:update-complete` before resolving.
 - `src/lib/period.ts` turns a period choice into an engine range; `start` is the opening valuation date (the day before the first counted day).
 - `src/pages/attribution-page.tsx` is the UI: period/account controls, summary, stacked bar chart, sortable table, and reconciliation/data-gap alerts.
@@ -45,6 +45,7 @@ pnpm bundle                       # clean + build + zip dist/<name>-<version>.zi
 - Average capital = mean start-of-day portfolio value, cash included. Contribution = gain / average capital.
 - Cash booking mirrors Wealthfolio's engine (`crates/portfolio-engine/src/compile.rs`): `amount` is the final cash (fees/taxes included); a BUY/SELL with `fxRate` in a currency other than `accountCurrency` settles in the account currency at amount × fxRate. Everything else settles in the activity currency.
 - Option and other contract quantities are scaled by the asset's contract multiplier (read from the asset profile like Wealthfolio: `metadata.option.multiplier`, else `metadata.contractMultiplier`, else 100 for options, 1 otherwise); quotes and unit prices stay per unit. `OPTION_EXPIRY` adjustments close the position at zero.
+- Activity types the engine doesn't handle fall to `default:` and only produce an "Ignored N X activities" warning. Wealthfolio distinguishes some activities by `subtype` (e.g. `ADJUSTMENT` + `OPTION_EXPIRY`), so check `crates/portfolio-engine/src/compile.rs` when a position looks stuck.
 - Cash is a line per currency (FX-only). Dividends are income on the holding plus an internal flow into cash. Standalone FEE/TAX count as negative income.
 - Reconciliation: per line gain = end − start − flows + income paid out; total gain = end − start − external flows. Failures must be shown in the UI, never hidden.
 
@@ -57,3 +58,5 @@ pnpm bundle                       # clean + build + zip dist/<name>-<version>.zi
 ## Versioning
 
 Bump `version` in both `package.json` and `manifest.json` together, and update `CHANGELOG.md` (Keep a Changelog format).
+
+Release: commit, add a lightweight tag `vX.Y.Z`, `git push origin main vX.Y.Z`, then `gh release create vX.Y.Z --notes-file <that version's CHANGELOG section>`. Publishing the release triggers `.github/workflows/release-bundle.yml`, which builds the zip and attaches it; don't upload it by hand.
